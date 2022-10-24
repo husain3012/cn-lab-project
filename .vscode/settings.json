@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "*.ejs": "html",
+        "unordered_map": "cpp",
+        "thread": "cpp",
+        "ostream": "cpp",
+        "iostream": "cpp"
+    }
+}
