@@ -1,87 +1,27 @@
-#include <bits/stdc++.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <arpa/inet.h>
 #include <thread>
-
-#ifdef __linux__
-#include <linux/in.h>
-#endif
+#include "./client.h"
 
 using namespace std;
-#define _MSG_BUFFER_SIZE_ 1024
 
-struct timeval read_timeout;
-class Client
-{
-    int socket_fd, port_number;
-    char outgoing_message[_MSG_BUFFER_SIZE_];
-    struct sockaddr_in server_address;
-    int outgoing_message_length;
-
-public:
-    // ---------------------------------------------------------------------------------------------
-    // Summary        : Create new instance of tcp client class (Class constructor)
-    //
-    // Pre-Condition  : None
-    // Post-Condition : None
-    //
-    // Input :-
-    //        > [string] host_address_name : address name of the host i.e ["
-    Client(string host_address_name, int port_number)
-    {
-        // initialize host address struct
-        server_address.sin_family = AF_INET;
-        inet_pton(AF_INET, host_address_name.c_str(), &server_address.sin_addr.s_addr);
-        server_address.sin_port = htons(port_number);
-
-        // initialize connection socket
-        socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-    }
-    void Connect()
-    {
-        // connect to host
-        connect(socket_fd, (struct sockaddr *)&server_address, sizeof(server_address));
-        cout << "Connected to server from " << inet_ntoa(server_address.sin_addr) << ":" << ntohs(server_address.sin_port) << endl;
-        cout << "Start Texting!" << endl;
-    }
-    void Send(string message)
-    {
-        // send message to host
-        outgoing_message_length = write(socket_fd, message.c_str(), message.length());
-    }
-    string Receive()
-    {
-        // receive message from host
-        char incoming_message[_MSG_BUFFER_SIZE_];
-        read_timeout.tv_sec = 0;
-        read_timeout.tv_usec = 10;
-        setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof read_timeout);
-        int incoming_message_length = read(socket_fd, incoming_message, _MSG_BUFFER_SIZE_);
-        if (incoming_message_length > 0)
-        {
-            incoming_message[incoming_message_length] = '\0';
-            return string(incoming_message);
-        }
-        return "";
-    }
-    void Close()
-    {
-        // close connection
-        close(socket_fd);
-    }
-};
-
-void MessageReceiverThread(Client *client)
+void ReceiveMessageHandler(Client *client)
 {
     while (true)
     {
         string message = client->Receive();
         if (message.length() > 0)
         {
-            cout << "=>\t" << message << endl;
+            for (int i = 0; i < message.length() + 4; i++)
+            {
+                cout << "-";
+            }
+            cout << endl;
+            cout << "| " << message << " |";
+            cout << endl;
+            for (int i = 0; i < message.length() + 4; i++)
+            {
+                cout << "-";
+            }
+            cout << endl;
         }
     }
 }
@@ -92,11 +32,13 @@ int main()
     string ip = "127.0.0.1";
     Client client(ip, 8080);
     client.Connect();
-    thread message_receiver_thread(MessageReceiverThread, &client);
+    thread message_receiver_thread(ReceiveMessageHandler, &client);
     while (true)
     {
         string message;
         getline(cin, message);
+
+        cout << "\rMe: " << message << endl;
         client.Send(message);
         // cout << "Message sent: " << message << endl;
     }
